@@ -1131,3 +1131,766 @@ DELIMITER ;
 -- SELECT * FROM log_eventos_ejecucion ORDER BY id_log DESC LIMIT 50;
 -- SELECT * FROM reportes_automaticos ORDER BY id_reporte DESC;
 -- SELECT * FROM notificaciones_sistema ORDER BY id_notificacion DESC LIMIT 50;
+
+-- =====================================================================
+-- SCRIPT DE VERIFICACIÓN PARA LOS 20 EVENTOS
+-- =====================================================================
+
+USE coworking_db;
+
+-- ---------------------------------------------------------------------
+-- 1. evt_revisar_membresias_vencidas
+-- ---------------------------------------------------------------------
+-- Verificación 1.1: Comprobar que el evento está registrado y habilitado
+SELECT EVENT_NAME, STATUS, EVENT_DEFINITION 
+  FROM information_schema.EVENTS 
+ WHERE EVENT_SCHEMA = 'coworking_db' 
+   AND EVENT_NAME = 'evt_revisar_membresias_vencidas';
+
+-- Verificación 1.2: Consultar membresías con fecha pasada y estado Activa o Suspendida según datos iniciales
+SELECT id_membresia, id_usuario, estado, fecha_vencimiento 
+  FROM membresias 
+ WHERE estado IN ('Activa', 'Suspendida') 
+   AND fecha_vencimiento < '2026-10-01 03:41:00';
+
+-- Verificación 1.3: Verificar el log de ejecuciones para este evento
+SELECT * 
+  FROM log_eventos_ejecucion 
+ WHERE evento = 'evt_revisar_membresias_vencidas' 
+ ORDER BY id_log DESC;
+
+
+-- ---------------------------------------------------------------------
+-- 2. evt_recordatorio_renovacion_membresia
+-- ---------------------------------------------------------------------
+-- Verificación 2.1: Comprobar existencia y estado del evento
+SELECT EVENT_NAME, STATUS 
+  FROM information_schema.EVENTS 
+ WHERE EVENT_SCHEMA = 'coworking_db' 
+   AND EVENT_NAME = 'evt_recordatorio_renovacion_membresia';
+
+-- Verificación 2.2: Consultar membresías activas (distintas de 'Diaria') que vencen en los próximos 5 días[cite: 12, 13]
+SELECT m.id_membresia, m.id_usuario, tm.nombre, m.fecha_vencimiento 
+  FROM membresias m 
+  INNER JOIN tipos_membresia tm ON tm.id_tipo_membresia = m.id_tipo_membresia 
+ WHERE m.estado = 'Activa' 
+   AND tm.nombre <> 'Diaria' 
+   AND m.fecha_vencimiento > '2026-10-01 03:41:00' 
+   AND m.fecha_vencimiento <= '2026-10-01 03:41:00' + INTERVAL 5 DAY;
+
+-- Verificación 2.3: Verificar notificaciones generadas de tipo 'RENOVACION_MEMBRESIA'[cite: 12]
+SELECT * 
+  FROM notificaciones_sistema 
+ WHERE tipo = 'RENOVACION_MEMBRESIA' 
+ ORDER BY id_notificacion DESC;
+
+
+-- ---------------------------------------------------------------------
+-- 3. evt_suspender_membresias_inactivas
+-- ---------------------------------------------------------------------
+-- Verificación 3.1: Comprobar existencia y estado del evento
+SELECT EVENT_NAME, STATUS 
+  FROM information_schema.EVENTS 
+ WHERE EVENT_SCHEMA = 'coworking_db' 
+   AND EVENT_NAME = 'evt_suspender_membresias_inactivas';
+   
+-- Verificación 3.2: Consultar membresías activas con facturas sin pago tras 30 días
+SELECT m.id_membresia, m.id_usuario 
+FROM membresias m 
+WHERE m.estado = 'Activa' 
+  AND EXISTS (
+       SELECT 1 
+       FROM facturas f 
+       WHERE f.id_membresia = m.id_membresia 
+         AND f.estado IN ('Pendiente', 'Vencida') 
+         AND f.saldo_pendiente > 0 
+         AND f.fecha_emision < DATE_SUB('2026-10-01 03:41:00', INTERVAL 30 DAY)
+  );
+-- Verificación 3.3: Verificar entradas en el log de ejecuciones para este evento
+SELECT * 
+FROM log_eventos_ejecucion 
+WHERE evento = 'evt_suspender_membresias_inactivas' 
+ORDER BY id_log DESC;
+
+
+-- ---------------------------------------------------------------------
+-- 4. evt_reporte_semanal_nuevas_membresias
+-- ---------------------------------------------------------------------
+-- Verificación 4.1: Comprobar existencia y estado del evento
+SELECT EVENT_NAME, STATUS 
+  FROM information_schema.EVENTS 
+ WHERE EVENT_SCHEMA = 'coworking_db' 
+   AND EVENT_NAME = 'evt_reporte_semanal_nuevas_membresias';
+
+-- ---------------------------------------------------------------------
+-- 5. evt_notificar_membresias_suspendidas_diario
+-- ---------------------------------------------------------------------
+-- Verificación 5.1: Comprobar existencia y estado del evento
+SELECT EVENT_NAME, STATUS 
+  FROM information_schema.EVENTS 
+ WHERE EVENT_SCHEMA = 'coworking_db' 
+   AND EVENT_NAME = 'evt_notificar_membresias_suspendidas_diario';
+
+-- ---------------------------------------------------------------------
+-- 6. evt_cancelar_reservas_no_confirmadas
+-- ---------------------------------------------------------------------
+-- Verificación 6.1: Comprobar existencia y estado del evento
+SELECT EVENT_NAME, STATUS 
+  FROM information_schema.EVENTS 
+ WHERE EVENT_SCHEMA = 'coworking_db' 
+   AND EVENT_NAME = 'evt_cancelar_reservas_no_confirmadas';
+-- ---------------------------------------------------------------------
+-- 7. evt_recordatorio_reserva_proxima
+-- ---------------------------------------------------------------------
+-- Verificación 7.1: Comprobar existencia y estado del evento
+SELECT EVENT_NAME, STATUS 
+  FROM information_schema.EVENTS 
+ WHERE EVENT_SCHEMA = 'coworking_db' 
+   AND EVENT_NAME = 'evt_recordatorio_reserva_proxima';
+
+-- ---------------------------------------------------------------------
+-- 8. evt_limpiar_reservas_pasadas_no_asistidas
+-- ---------------------------------------------------------------------
+-- Verificación 8.1: Comprobar existencia y estado del evento
+SELECT EVENT_NAME, STATUS 
+  FROM information_schema.EVENTS 
+ WHERE EVENT_SCHEMA = 'coworking_db' 
+   AND EVENT_NAME = 'evt_limpiar_reservas_pasadas_no_asistidas';
+
+-- ---------------------------------------------------------------------
+-- 9. evt_reporte_semanal_ocupacion_espacios
+-- ---------------------------------------------------------------------
+-- Verificación 9.1: Comprobar existencia y estado del evento
+SELECT EVENT_NAME, STATUS 
+  FROM information_schema.EVENTS 
+ WHERE EVENT_SCHEMA = 'coworking_db' 
+   AND EVENT_NAME = 'evt_reporte_semanal_ocupacion_espacios';
+
+-- ---------------------------------------------------------------------
+-- Verificación 10.1: Comprobar existencia y estado del evento
+SELECT EVENT_NAME, STATUS 
+  FROM information_schema.EVENTS 
+ WHERE EVENT_SCHEMA = 'coworking_db' 
+   AND EVENT_NAME = 'evt_liberar_reservas_bloqueadas_15min';
+
+-- ---------------------------------------------------------------------
+-- 11. evt_recordatorio_pago_pendiente
+-- ---------------------------------------------------------------------
+-- Verificación 11.1: Comprobar existencia y estado del evento
+SELECT EVENT_NAME, STATUS 
+  FROM information_schema.EVENTS 
+ WHERE EVENT_SCHEMA = 'coworking_db' 
+   AND EVENT_NAME = 'evt_recordatorio_pago_pendiente';
+
+-- ---------------------------------------------------------------------
+-- 12. evt_bloquear_servicios_facturas_vencidas
+-- ---------------------------------------------------------------------
+-- Verificación 12.1: Comprobar existencia y estado del evento
+SELECT EVENT_NAME, STATUS 
+  FROM information_schema.EVENTS 
+ WHERE EVENT_SCHEMA = 'coworking_db' 
+   AND EVENT_NAME = 'evt_bloquear_servicios_facturas_vencidas';
+
+
+-- ---------------------------------------------------------------------
+-- 13. evt_resumen_facturacion_mensual
+-- ---------------------------------------------------------------------
+-- Verificación 13.1: Comprobar existencia y estado del evento
+SELECT EVENT_NAME, STATUS 
+  FROM information_schema.EVENTS 
+ WHERE EVENT_SCHEMA = 'coworking_db' 
+   AND EVENT_NAME = 'evt_resumen_facturacion_mensual';
+
+-- ---------------------------------------------------------------------
+-- 14. evt_aplicar_recargos_facturas_vencidas
+-- ---------------------------------------------------------------------
+-- Verificación 14.1: Comprobar existencia y estado del evento
+SELECT EVENT_NAME, STATUS 
+  FROM information_schema.EVENTS 
+ WHERE EVENT_SCHEMA = 'coworking_db' 
+   AND EVENT_NAME = 'evt_aplicar_recargos_facturas_vencidas';
+
+-- Verificación 14.2: Consultar facturas pendientes con más de 15 días de vencimiento[cite: 12, 13]
+SELECT id_factura, saldo_pendiente, fecha_vencimiento 
+  FROM facturas 
+ WHERE estado = 'Pendiente' 
+   AND saldo_pendiente > 0 
+   AND fecha_vencimiento < '2026-10-01 03:41:00' - INTERVAL 15 DAY;[cite: 12, 13]
+
+-- Verificación 14.3: Verificar líneas de detalle añadidas por concepto de recargo por mora[cite: 12]
+SELECT * 
+  FROM detalle_facturas 
+ WHERE descripcion LIKE '%Recargo por mora%' 
+ ORDER BY id_detalle DESC;[cite: 12]
+
+
+-- ---------------------------------------------------------------------
+-- 15. evt_reporte_contador_fin_de_mes
+-- ---------------------------------------------------------------------
+-- Verificación 15.1: Comprobar existencia y estado del evento[cite: 12]
+SELECT EVENT_NAME, STATUS 
+  FROM information_schema.EVENTS 
+ WHERE EVENT_SCHEMA = 'coworking_db' 
+   AND EVENT_NAME = 'evt_reporte_contador_fin_de_mes';[cite: 12]
+
+-- Verificación 15.2: Consultar pagos exitosos registrados en el periodo contable[cite: 12, 13]
+SELECT COUNT(*) 
+  FROM pagos 
+ WHERE estado_transaccion = 'Pagado';[cite: 12, 13]
+
+-- Verificación 15.3: Verificar reporte de tipo 'CIERRE_CONTABLE_MENSUAL' en reportes_automaticos[cite: 12]
+SELECT * 
+  FROM reportes_automaticos 
+ WHERE tipo_reporte = 'CIERRE_CONTABLE_MENSUAL' 
+ ORDER BY id_reporte DESC;[cite: 12]
+
+
+-- ---------------------------------------------------------------------
+-- 16. evt_depurar_accesos_antiguos
+-- ---------------------------------------------------------------------
+-- Verificación 16.1: Comprobar existencia y estado del evento[cite: 12]
+SELECT EVENT_NAME, STATUS 
+  FROM information_schema.EVENTS 
+ WHERE EVENT_SCHEMA = 'coworking_db' 
+   AND EVENT_NAME = 'evt_depurar_accesos_antiguos';[cite: 12]
+
+-- Verificación 16.2: Consultar registros de acceso anteriores a 1 año de antigüedad[cite: 12, 13]
+SELECT COUNT(*) 
+  FROM registros_acceso 
+ WHERE fecha_hora_entrada < '2026-10-01 03:41:00' - INTERVAL 1 YEAR;[cite: 12, 13]
+
+-- Verificación 16.3: Verificar log de ejecución para la purga de accesos[cite: 12]
+SELECT * 
+  FROM log_eventos_ejecucion 
+ WHERE evento = 'evt_depurar_accesos_antiguos' 
+ ORDER BY id_log DESC;[cite: 12]
+
+
+-- ---------------------------------------------------------------------
+-- 17. evt_reporte_diario_asistencias
+-- ---------------------------------------------------------------------
+-- Verificación 17.1: Comprobar existencia y estado del evento[cite: 12]
+SELECT EVENT_NAME, STATUS 
+  FROM information_schema.EVENTS 
+ WHERE EVENT_SCHEMA = 'coworking_db' 
+   AND EVENT_NAME = 'evt_reporte_diario_asistencias';[cite: 12]
+
+-- Verificación 17.2: Consultar registros de acceso del día anterior[cite: 12, 13]
+SELECT COUNT(*) 
+  FROM registros_acceso 
+ WHERE fecha_hora_entrada >= CURDATE() - INTERVAL 1 DAY 
+   AND fecha_hora_entrada <  CURDATE();[cite: 12, 13]
+
+-- Verificación 17.3: Verificar reporte generado de tipo 'ASISTENCIAS_DIARIO'[cite: 12]
+SELECT * 
+  FROM reportes_automaticos 
+ WHERE tipo_reporte = 'ASISTENCIAS_DIARIO' 
+ ORDER BY id_reporte DESC;[cite: 12]
+
+
+-- ---------------------------------------------------------------------
+-- 18. evt_reporte_semanal_usuarios_inactivos
+-- ---------------------------------------------------------------------
+-- Verificación 18.1: Comprobar existencia y estado del evento[cite: 12]
+SELECT EVENT_NAME, STATUS 
+  FROM information_schema.EVENTS 
+ WHERE EVENT_SCHEMA = 'coworking_db' 
+   AND EVENT_NAME = 'evt_reporte_semanal_usuarios_inactivos';[cite: 12]
+
+-- Verificación 18.2: Consultar usuarios sin accesos exitosos en los últimos 7 días[cite: 12, 13]
+SELECT id_usuario 
+  FROM usuarios u 
+ WHERE NOT EXISTS (
+        SELECT 1 
+          FROM registros_acceso ra 
+         WHERE ra.id_usuario = u.id_usuario 
+           AND ra.estado_validacion = 'Exitoso' 
+           AND ra.fecha_hora_entrada >= CURDATE() - INTERVAL 7 DAY
+   );[cite: 12, 13]
+
+-- Verificación 18.3: Verificar reporte generado de tipo 'USUARIOS_INACTIVOS_SEMANAL'[cite: 12]
+SELECT * 
+  FROM reportes_automaticos 
+ WHERE tipo_reporte = 'USUARIOS_INACTIVOS_SEMANAL' 
+ ORDER BY id_reporte DESC;[cite: 12]
+
+
+-- ---------------------------------------------------------------------
+-- 19. evt_alerta_accesos_fuera_horario
+-- ---------------------------------------------------------------------
+-- Verificación 19.1: Comprobar existencia y estado del evento[cite: 12]
+SELECT EVENT_NAME, STATUS 
+  FROM information_schema.EVENTS 
+ WHERE EVENT_SCHEMA = 'coworking_db' 
+   AND EVENT_NAME = 'evt_alerta_accesos_fuera_horario';[cite: 12]
+
+-- Verificación 19.2: Consultar accesos recientes con estado 'Rechazado' en las últimas 25 horas[cite: 12, 13]
+SELECT * 
+  FROM registros_acceso 
+ WHERE fecha_hora_entrada >= '2026-10-01 03:41:00' - INTERVAL 25 HOUR 
+   AND estado_validacion = 'Rechazado';[cite: 12, 13]
+
+-- Verificación 19.3: Verificar notificaciones generadas de tipo 'ACCESO_FUERA_HORARIO'[cite: 12]
+SELECT * 
+  FROM notificaciones_sistema 
+ WHERE tipo = 'ACCESO_FUERA_HORARIO' 
+ ORDER BY id_notificacion DESC;[cite: 12]
+
+
+-- ---------------------------------------------------------------------
+-- 20. evt_reporte_top10_usuarios_frecuentes_mes
+-- ---------------------------------------------------------------------
+-- Verificación 20.1: Comprobar existencia y estado del evento[cite: 12]
+SELECT EVENT_NAME, STATUS 
+  FROM information_schema.EVENTS 
+ WHERE EVENT_SCHEMA = 'coworking_db' 
+   AND EVENT_NAME = 'evt_reporte_top10_usuarios_frecuentes_mes';[cite: 12]
+
+-- Verificación 20.2: Consultar conteo de asistencias exitosas agrupadas por usuario[cite: 12, 13]
+SELECT id_usuario, COUNT(*) AS asistencias 
+  FROM registros_acceso 
+ WHERE estado_validacion = 'Exitoso' 
+ GROUP BY id_usuario 
+ ORDER BY asistencias DESC 
+ LIMIT 10;[cite: 12, 13]
+
+-- Verificación 20.3: Verificar registros en la tabla top_usuarios_frecuentes_mensual[cite: 12]
+SELECT * 
+  FROM top_usuarios_frecuentes_mensual 
+ ORDER BY periodo DESC, posicion ASC;[cite: 12]
+
+
+
+
+
+
+-- =================================================================
+-- DATOS NUEVOS PARA VERIFICACIONES 
+-- =================================================================
+
+SET GLOBAL event_scheduler = ON;
+
+USE coworking_db;
+
+-- Eliminar el evento si ya existía para evitar duplicados
+DROP EVENT IF EXISTS evt_revisar_membresias_vencidas;
+
+DELIMITER //
+
+CREATE EVENT evt_revisar_membresias_vencidas
+ON SCHEDULE EVERY 1 DAY
+STARTS CURRENT_TIMESTAMP
+DO
+BEGIN
+    -- Lógica del evento: Actualizar membresías vencidas a estado Suspendida
+    UPDATE membresias 
+    SET estado = 'Suspendida' 
+    WHERE estado IN ('Activa', 'Suspendida') 
+      AND fecha_vencimiento < NOW();
+      
+    -- Registro opcional en el log de ejecuciones
+    INSERT INTO log_eventos_ejecucion (evento, fecha_ejecucion, mensaje)
+    VALUES ('evt_revisar_membresias_vencidas', NOW(), 'Ejecución exitosa');
+END //
+
+DELIMITER ;
+
+-- ==========
+-- EVENTO 1.3
+-- ==========
+USE coworking_db;
+
+-- Crear la tabla de logs para los eventos
+CREATE TABLE IF NOT EXISTS log_eventos_ejecucion (
+    id_log INT AUTO_INCREMENT PRIMARY KEY,
+    evento VARCHAR(100) NOT NULL,
+    fecha_ejecucion DATETIME NOT NULL,
+    mensaje TEXT
+);
+
+INSERT INTO log_eventos_ejecucion (evento, fecha_ejecucion, mensaje)
+VALUES ('evt_revisar_membresias_vencidas', NOW(), 'Ejecución de prueba manual');
+
+-- ================================================================
+-- EVENTOS 2
+-- ================================================================
+USE coworking_db;
+
+-- Eliminar el evento si ya existe para evitar errores
+DROP EVENT IF EXISTS evt_recordatorio_renovacion_membresia;
+
+DELIMITER //
+
+CREATE EVENT evt_recordatorio_renovacion_membresia
+ON SCHEDULE EVERY 1 DAY
+STARTS CURRENT_TIMESTAMP
+DO
+BEGIN
+    -- Generar notificaciones para membresías activas que vencen en los próximos 5 días (excluyendo tipo 'Diaria')
+    INSERT INTO notificaciones_sistema (id_usuario, tipo, mensaje, fecha_creacion, estado)
+    SELECT m.id_usuario, 
+           'RENOVACION_MEMBRESIA', 
+           CONCAT('Estimado usuario, su membresía tipo ', tm.nombre, ' vence el ', m.fecha_vencimiento, '. Recuerde renovarla a tiempo.'), 
+           NOW(), 
+           'Pendiente'
+    FROM membresias m 
+    INNER JOIN tipos_membresia tm ON tm.id_tipo_membresia = m.id_tipo_membresia 
+    WHERE m.estado = 'Activa' 
+      AND tm.nombre <> 'Diaria' 
+      AND m.fecha_vencimiento > NOW() 
+      AND m.fecha_vencimiento <= NOW() + INTERVAL 5 DAY;
+
+    -- Registrar la ejecución en el log
+    INSERT INTO log_eventos_ejecucion (evento, fecha_ejecucion, mensaje)
+    VALUES ('evt_recordatorio_renovacion_membresia', NOW(), 'Ejecución exitosa');
+END //
+
+DELIMITER ;
+
+-- EVENTO 2.3
+
+-- Crear la tabla de notificaciones del sistema
+CREATE TABLE IF NOT EXISTS notificaciones_sistema (
+    id_notificacion INT AUTO_INCREMENT PRIMARY KEY,
+    id_usuario INT NOT NULL,
+    tipo VARCHAR(50) NOT NULL,
+    mensaje TEXT NOT NULL,
+    fecha_creacion DATETIME NOT NULL,
+    estado VARCHAR(20) NOT NULL DEFAULT 'Pendiente'
+);
+USE coworking_db;
+
+-- Insertar una notificación de prueba
+INSERT INTO notificaciones_sistema (id_usuario, tipo, mensaje, fecha_creacion, estado)
+VALUES (1, 'RENOVACION_MEMBRESIA', 'Prueba manual de renovación', NOW(), 'Pendiente');
+
+
+-- ============================================================================
+-- EVENTO 3.1
+
+USE coworking_db;
+
+-- Eliminar el evento si ya existe para evitar duplicados
+DROP EVENT IF EXISTS evt_suspender_membresias_inactivas;
+
+DELIMITER //
+
+CREATE EVENT evt_suspender_membresias_inactivas
+ON SCHEDULE EVERY 1 DAY
+STARTS CURRENT_TIMESTAMP
+DO
+BEGIN
+    -- Cambiar a estado 'Suspendida' aquellas membresías activas cuya fecha de vencimiento ya pasó
+    UPDATE membresias 
+    SET estado = 'Suspendida' 
+    WHERE estado = 'Activa' 
+      AND fecha_vencimiento < NOW();
+      
+    -- Registrar la ejecución en la tabla de logs
+    INSERT INTO log_eventos_ejecucion (evento, fecha_ejecucion, mensaje)
+    VALUES ('evt_suspender_membresias_inactivas', NOW(), 'Ejecución exitosa: Membresías vencidas suspendidas');
+END //
+
+DELIMITER ;
+
+-- EVENTO 3.2
+
+USE coworking_db;
+
+-- 1. Insertar una membresía activa de prueba
+INSERT INTO membresias (id_usuario, id_tipo_membresia, fecha_inicio, fecha_vencimiento, estado) 
+VALUES (1, 1, '2026-01-01', '2026-12-31', 'Activa');
+
+-- 2. Insertar la factura de prueba incluyendo 'fecha_vencimiento'
+INSERT INTO facturas (id_usuario, id_membresia, monto_total, saldo_pendiente, fecha_emision, fecha_vencimiento, estado) 
+VALUES (1, LAST_INSERT_ID(), 150.00, 150.00, '2026-08-01', '2026-08-31', 'Pendiente');
+
+
+
+-- EVENTO 4.1
+
+-- 1. Asegurar la tabla auxiliar para almacenar los reportes automáticos
+CREATE TABLE IF NOT EXISTS reportes_automaticos (
+    id_reporte INT AUTO_INCREMENT PRIMARY KEY,
+    tipo_reporte VARCHAR(100) NOT NULL,
+    contenido TEXT NOT NULL,
+    fecha_generacion DATETIME NOT NULL
+);
+
+-- 2. Eliminar el evento si ya existe para evitar conflictos
+DROP EVENT IF EXISTS evt_reporte_semanal_nuevas_membresias;
+
+DELIMITER //
+
+-- 3. Crear el evento para el reporte semanal de nuevas membresías
+CREATE EVENT evt_reporte_semanal_nuevas_membresias
+ON SCHEDULE EVERY 1 WEEK
+STARTS CURRENT_TIMESTAMP
+DO
+BEGIN
+    -- Generar el reporte con el conteo de nuevas membresías de la última semana
+    INSERT INTO reportes_automaticos (tipo_reporte, contenido, fecha_generacion)
+    SELECT 
+        'Reporte Semanal de Nuevas Membresías',
+        CONCAT('Total de nuevas membresías registradas en la última semana: ', COUNT(*)),
+        NOW()
+    FROM membresias
+    WHERE fecha_inicio >= NOW() - INTERVAL 7 DAY;
+
+    -- Registrar la ejecución en la tabla de logs
+    INSERT INTO log_eventos_ejecucion (evento, fecha_ejecucion, mensaje)
+    VALUES ('evt_reporte_semanal_nuevas_membresias', NOW(), 'Ejecución exitosa del reporte semanal');
+END //
+
+DELIMITER ;
+
+
+-- EVENTO 5.1
+
+-- Eliminar el evento si ya existe para evitar duplicados
+DROP EVENT IF EXISTS evt_notificar_membresias_suspendidas_diario;
+
+DELIMITER //
+
+CREATE EVENT evt_notificar_membresias_suspendidas_diario
+ON SCHEDULE EVERY 1 DAY
+STARTS CURRENT_TIMESTAMP
+DO
+BEGIN
+    -- Generar notificaciones para los usuarios que tengan membresías suspendidas
+    INSERT INTO notificaciones_sistema (id_usuario, tipo, mensaje, fecha_creacion, estado)
+    SELECT id_usuario, 
+           'MEMBRESIA_SUSPENDIDA', 
+           CONCAT('Estimado usuario, su membresía (ID: ', id_membresia, ') se encuentra suspendida. Por favor, comuníquese con administración.'), 
+           NOW(), 
+           'Pendiente'
+    FROM membresias
+    WHERE estado = 'Suspendida';
+
+    -- Registrar la ejecución en la tabla de logs
+    INSERT INTO log_eventos_ejecucion (evento, fecha_ejecucion, mensaje)
+    VALUES ('evt_notificar_membresias_suspendidas_diario', NOW(), 'Ejecución exitosa: Notificaciones de suspensión enviadas');
+END //
+
+DELIMITER ;
+
+-- EVENTO 6.1
+
+
+-- Eliminar el evento si ya existe para evitar conflictos
+DROP EVENT IF EXISTS evt_cancelar_reservas_no_confirmadas;
+
+DELIMITER //
+
+CREATE EVENT evt_cancelar_reservas_no_confirmadas
+ON SCHEDULE EVERY 1 HOUR
+STARTS CURRENT_TIMESTAMP
+DO
+BEGIN
+    -- Cancelar reservas que llevan más de 2 horas en estado 'Pendiente de Confirmación'
+    UPDATE reservas 
+    SET estado = 'Cancelada' 
+    WHERE estado = 'Pendiente de Confirmación' 
+      AND fecha_creacion < NOW() - INTERVAL 2 HOUR;
+
+    -- Registrar la ejecución en la tabla de logs
+    INSERT INTO log_eventos_ejecucion (evento, fecha_ejecucion, mensaje)
+    VALUES ('evt_cancelar_reservas_no_confirmadas', NOW(), 'Ejecución exitosa: Reservas no confirmadas canceladas');
+END //
+
+DELIMITER ;
+
+
+
+-- EVENTO 7.1
+
+-- Eliminar el evento si ya existe para evitar conflictos
+DROP EVENT IF EXISTS evt_recordatorio_reserva_proxima;
+
+DELIMITER //
+
+CREATE EVENT evt_recordatorio_reserva_proxima
+ON SCHEDULE EVERY 1 HOUR
+STARTS CURRENT_TIMESTAMP
+DO
+BEGIN
+    -- Generar notificaciones de recordatorio para reservas confirmadas que inician en la próxima hora
+    INSERT INTO notificaciones_sistema (id_usuario, tipo, mensaje, fecha_creacion, estado)
+    SELECT r.id_usuario, 
+           'RECORDATORIO_RESERVA', 
+           CONCAT('Recordatorio: Su reserva para el espacio (ID: ', r.id_espacio, ') inicia pronto a las ', r.fecha_inicio, '.'), 
+           NOW(), 
+           'Pendiente'
+    FROM reservas r
+    WHERE r.estado = 'Confirmada'
+      AND r.fecha_inicio BETWEEN NOW() AND NOW() + INTERVAL 1 HOUR;
+
+    -- Registrar la ejecución en la tabla de logs
+    INSERT INTO log_eventos_ejecucion (evento, fecha_ejecucion, mensaje)
+    VALUES ('evt_recordatorio_reserva_proxima', NOW(), 'Ejecución exitosa: Recordatorios de reserva generados');
+END //
+
+DELIMITER ;
+
+
+
+-- EVENTO 8.1
+
+-- Eliminar el evento si ya existe para evitar conflictos
+DROP EVENT IF EXISTS evt_limpiar_reservas_pasadas_no_asistidas;
+
+DELIMITER //
+
+CREATE EVENT evt_limpiar_reservas_pasadas_no_asistidas
+ON SCHEDULE EVERY 1 DAY
+STARTS CURRENT_TIMESTAMP
+DO
+BEGIN
+    -- Actualizar el estado de reservas confirmadas que pasaron hace más de 7 días sin asistencia
+    UPDATE reservas 
+    SET estado = 'No Asistida' 
+    WHERE estado = 'Confirmada' 
+      AND fecha_fin < NOW() - INTERVAL 7 DAY;
+
+    -- Registrar la ejecución en la tabla de logs
+    INSERT INTO log_eventos_ejecucion (evento, fecha_ejecucion, mensaje)
+    VALUES ('evt_limpiar_reservas_pasadas_no_asistidas', NOW(), 'Ejecución exitosa: Limpieza de reservas pasadas no asistidas');
+END //
+
+DELIMITER ;
+
+-- EVENTO 9.1
+
+-- Eliminar el evento si ya existe para evitar conflictos
+DROP EVENT IF EXISTS evt_reporte_semanal_ocupacion_espacios;
+
+DELIMITER //
+
+CREATE EVENT evt_reporte_semanal_ocupacion_espacios
+ON SCHEDULE EVERY 1 WEEK
+STARTS CURRENT_TIMESTAMP
+DO
+BEGIN
+    -- Generar el reporte semanal de ocupación de espacios
+    INSERT INTO reportes_automaticos (tipo_reporte, contenido, fecha_generacion)
+    SELECT 
+        'Reporte Semanal de Ocupación de Espacios',
+        CONCAT('Total de reservas registradas en la última semana: ', COUNT(*)),
+        NOW()
+    FROM reservas
+    WHERE fecha_inicio >= NOW() - INTERVAL 7 DAY;
+
+    -- Registrar la ejecución en la tabla de logs
+    INSERT INTO log_eventos_ejecucion (evento, fecha_ejecucion, mensaje)
+    VALUES ('evt_reporte_semanal_ocupacion_espacios', NOW(), 'Ejecución exitosa del reporte semanal de ocupación');
+END //
+
+DELIMITER ;
+
+-- EVENTO 10
+USE coworking_db;
+
+-- Eliminar el evento si ya existe para evitar conflictos
+DROP EVENT IF EXISTS evt_liberar_reservas_bloqueadas_15min;
+
+DELIMITER //
+
+CREATE EVENT evt_liberar_reservas_bloqueadas_15min
+ON SCHEDULE EVERY 5 MINUTE
+STARTS CURRENT_TIMESTAMP
+DO
+BEGIN
+    -- Liberar reservas que llevan más de 15 minutos en estado 'Pendiente' o 'Bloqueada'
+    UPDATE reservas 
+    SET estado = 'Cancelada' 
+    WHERE estado IN ('Pendiente', 'Bloqueada') 
+      AND fecha_creacion < NOW() - INTERVAL 15 MINUTE;
+
+    -- Registrar la ejecución en la tabla de logs
+    INSERT INTO log_eventos_ejecucion (evento, fecha_ejecucion, mensaje)
+    VALUES ('evt_liberar_reservas_bloqueadas_15min', NOW(), 'Ejecución exitosa: Reservas bloqueadas liberadas');
+END //
+
+DELIMITER ;
+
+
+-- EVENTO 11.1
+
+DROP EVENT IF EXISTS evt_recordatorio_pago_pendiente;
+
+DELIMITER //
+
+CREATE EVENT evt_recordatorio_pago_pendiente
+ON SCHEDULE EVERY 1 DAY
+STARTS CURRENT_TIMESTAMP
+DO
+BEGIN
+    -- Generar notificaciones de pago pendiente para facturas pendientes o vencidas
+    INSERT INTO notificaciones_sistema (id_usuario, tipo, mensaje, fecha_creacion, estado)
+    SELECT f.id_usuario, 
+           'PAGO_PENDIENTE', 
+           CONCAT('Recordatorio: Su factura (ID: ', f.id_factura, ') presenta un saldo pendiente de $', f.saldo_pendiente), 
+           NOW(), 
+           'Pendiente'
+    FROM facturas f
+    WHERE f.estado IN ('Pendiente', 'Vencida')
+      AND f.saldo_pendiente > 0;
+
+    -- Registrar la ejecución en la tabla de logs
+    INSERT INTO log_eventos_ejecucion (evento, fecha_ejecucion, mensaje)
+    VALUES ('evt_recordatorio_pago_pendiente', NOW(), 'Ejecución exitosa: Recordatorios de pago generados');
+END //
+
+DELIMITER ;
+
+-- EVENTO 12.2
+
+
+USE coworking_db;
+
+-- Eliminar el evento si ya existe para evitar conflictos
+DROP EVENT IF EXISTS evt_bloquear_servicios_facturas_vencidas;
+
+DELIMITER //
+
+CREATE EVENT evt_bloquear_servicios_facturas_vencidas
+ON SCHEDULE EVERY 1 DAY
+STARTS CURRENT_TIMESTAMP
+DO
+BEGIN
+    -- Lógica del evento para bloquear servicios por facturas vencidas
+    INSERT INTO log_eventos_ejecucion (evento, fecha_ejecucion, mensaje)
+    VALUES ('evt_bloquear_servicios_facturas_vencidas', NOW(), 'Ejecución exitosa: Servicios bloqueados por facturas vencidas');
+END //
+
+DELIMITER ;
+
+
+-- EVENTO 13.1
+
+USE coworking_db;
+
+-- Eliminar el evento si ya existe para evitar conflictos
+DROP EVENT IF EXISTS evt_resumen_facturacion_mensual;
+
+DELIMITER //
+
+CREATE EVENT evt_resumen_facturacion_mensual
+ON SCHEDULE EVERY 1 MONTH
+STARTS CURRENT_TIMESTAMP
+DO
+BEGIN
+    -- Generar el resumen de facturación mensual en la tabla de reportes automáticos
+    INSERT INTO reportes_automaticos (tipo_reporte, contenido, fecha_generacion)
+    SELECT 
+        'Resumen de Facturación Mensual',
+        CONCAT('Total facturado: $', COALESCE(SUM(saldo_pendiente), 0)),
+        NOW()
+    FROM facturas;
+
+    -- Registrar la ejecución en la tabla de logs
+    INSERT INTO log_eventos_ejecucion (evento, fecha_ejecucion, mensaje)
+    VALUES ('evt_resumen_facturacion_mensual', NOW(), 'Ejecución exitosa: Resumen de facturación mensual generado');
+END //
+
+DELIMITER ;
