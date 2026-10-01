@@ -19,9 +19,9 @@ Reserva en estado 'Pendiente de Confirmación' o 'Confirmada'.
 USE coworking_db;
 
 
--- =====================================================================
+
 -- CONSULTA 01: Listar todos los usuarios con su información básica.
--- =====================================================================
+
 SELECT
     u.id_usuario,
     u.identificacion,
@@ -37,9 +37,9 @@ LEFT JOIN empresas e ON e.id_empresa = u.id_empresa
 ORDER BY u.id_usuario;
 
 
--- =====================================================================
+
 -- CONSULTA 02: Listar los usuarios con membresía activa.
--- =====================================================================
+
 SELECT
     u.id_usuario,
     CONCAT(u.nombre, ' ', u.apellidos) AS nombre_completo,
@@ -55,9 +55,9 @@ WHERE m.estado = 'Activa'
 ORDER BY u.id_usuario;
 
 
--- =====================================================================
+
 -- CONSULTA 03: Listar los usuarios cuya membresía está vencida.
--- =====================================================================
+
 SELECT
     u.id_usuario,
     CONCAT(u.nombre, ' ', u.apellidos) AS nombre_completo,
@@ -73,9 +73,9 @@ WHERE m.estado = 'Vencida'
 ORDER BY m.fecha_vencimiento DESC;
 
 
--- =====================================================================
+
 -- CONSULTA 04: Listar los usuarios con membresía suspendida.
--- =====================================================================
+
 SELECT
     u.id_usuario,
     CONCAT(u.nombre, ' ', u.apellidos) AS nombre_completo,
@@ -91,10 +91,10 @@ WHERE m.estado = 'Suspendida'
 ORDER BY u.id_usuario;
 
 
--- =====================================================================
+
 -- CONSULTA 05: Contar cuántos usuarios tienen cada tipo de membresía.
 -- (total histórico de usuarios y usuarios con membresía activa)
--- =====================================================================
+
 SELECT
     tm.id_tipo_membresia,
     tm.nombre AS tipo_membresia,
@@ -106,9 +106,8 @@ GROUP BY tm.id_tipo_membresia, tm.nombre
 ORDER BY total_usuarios DESC;
 
 
--- =====================================================================
+
 -- CONSULTA 06: Mostrar el top 10 de usuarios con más antigüedad en el coworking.
--- =====================================================================
 SELECT
     u.id_usuario,
     CONCAT(u.nombre, ' ', u.apellidos) AS nombre_completo,
@@ -125,7 +124,7 @@ LIMIT 10;
 -- CONSULTA 07: Listar usuarios que pertenecen a una empresa específica.
 -- (modificar la variable @nombre_empresa para consultar otra empresa)
 -- =====================================================================
-SET @nombre_empresa = 'TechNova Solutions SAS';
+SET @nombre_empresa = 'TechNova Solutions SAS' COLLATE utf8mb4_unicode_ci;
 
 SELECT
     e.nombre AS empresa,
@@ -140,9 +139,7 @@ WHERE e.nombre = @nombre_empresa
 ORDER BY u.apellidos, u.nombre;
 
 
--- =====================================================================
 -- CONSULTA 08: Contar cuántos usuarios están asociados a cada empresa.
--- =====================================================================
 SELECT
     e.id_empresa,
     e.nombre AS empresa,
@@ -172,7 +169,9 @@ ORDER BY u.id_usuario;
 -- (reservas 'Pendiente de Confirmación' o 'Confirmada' cuya fecha de
 --  inicio cae dentro del mes en curso)
 -- =====================================================================
-SELECT
+SELECT MIN(fecha_inicio), MAX(fecha_inicio) FROM reservas;
+
+SELECT 
     u.id_usuario,
     CONCAT(u.nombre, ' ', u.apellidos) AS nombre_completo,
     u.email,
@@ -180,8 +179,8 @@ SELECT
 FROM usuarios u
 INNER JOIN reservas r ON r.id_usuario = u.id_usuario
 WHERE r.estado IN ('Pendiente de Confirmación', 'Confirmada')
-  AND r.fecha_inicio >= DATE_FORMAT(CURDATE(), '%Y-%m-01')
-  AND r.fecha_inicio <  DATE_ADD(DATE_FORMAT(CURDATE(), '%Y-%m-01'), INTERVAL 1 MONTH)
+  AND r.fecha_inicio >= '2026-09-01'
+  AND r.fecha_inicio < '2026-10-01'
 GROUP BY u.id_usuario, u.nombre, u.apellidos, u.email
 HAVING COUNT(r.id_reserva) > 5
 ORDER BY reservas_activas_mes DESC;
