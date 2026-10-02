@@ -50,6 +50,7 @@ SELECT
     u.email,
     p.metodo_pago,
     p.monto,
+    p.estado_transaccion,
     p.fecha_pago
 FROM pagos p
 INNER JOIN facturas f ON f.id_factura = p.id_factura
@@ -68,6 +69,7 @@ SELECT
     CONCAT(u.nombre, ' ', u.apellidos) AS usuario,
     p.metodo_pago,
     p.monto,
+    p.estado_transaccion,
     p.fecha_pago
 FROM pagos p
 INNER JOIN facturas f ON f.id_factura = p.id_factura
@@ -402,3 +404,67 @@ WHERE p.estado_transaccion = 'Pagado'
   AND p.fecha_pago <  DATE_ADD(CURDATE(), INTERVAL 1 DAY)
 GROUP BY DATE_FORMAT(p.fecha_pago, '%Y-%m')
 ORDER BY mes;
+
+
+-- =====================================================================
+-- DATOS ADICIONALES PARA LA CONSULTA 53
+-- Pagos realizados después del vencimiento de la factura
+-- =====================================================================
+
+-- Facturas nuevas (reservas sin factura previa: 14, 38, 40 y 35)
+INSERT INTO facturas (id_factura, id_usuario, id_membresia, id_reserva, monto_total, saldo_pendiente, estado, motivo_anulacion, fecha_emision, fecha_vencimiento) VALUES
+(49, 25, NULL, 14,  40.00, 0.00, 'Pagada', NULL, '2026-09-20 13:15:00', '2026-09-25 23:59:59'),
+(50, 24, NULL, 38,  50.00, 0.00, 'Pagada', NULL, '2026-09-06 15:15:00', '2026-09-21 23:59:59'),
+(51, 10, NULL, 40,  30.00, 0.00, 'Pagada', NULL, '2026-09-09 11:15:00', '2026-09-16 23:59:59'),
+(52, 7,  NULL, 35, 141.50, 0.00, 'Pagada', NULL, '2026-09-14 17:15:00', '2026-09-21 23:59:59');
+
+-- Detalle de las facturas nuevas (subtotal es columna generada)
+INSERT INTO detalle_facturas (id_factura, id_servicio, descripcion, cantidad, precio_unitario) VALUES
+(49, NULL, 'Reserva Escritorio Flex A (4 horas)',          1,  40.00),
+(50, NULL, 'Reserva Escritorio Flex Silencioso (5 horas)', 1,  50.00),
+(51, NULL, 'Reserva Sala Reuniones Andes (2 horas)',       1,  30.00),
+(52, NULL, 'Reserva Oficina Privada 102 (9 horas)',        1, 121.50),
+(52, 3,    'Café ilimitado',                               1,  20.00);
+
+-- Pagos tardíos (fecha_pago > fecha_vencimiento de la factura)
+INSERT INTO pagos (id_factura, metodo_pago, monto, estado_transaccion, fecha_pago) VALUES
+-- Factura 49 (vence 2026-09-25): pagada 2 días tarde
+(49, 'Transferencia',  40.00, 'Pagado',    '2026-09-27 10:00:00'),
+-- Factura 50 (vence 2026-09-21): pagada 2 días tarde
+(50, 'Efectivo',       50.00, 'Pagado',    '2026-09-23 11:00:00'),
+-- Factura 51 (vence 2026-09-16): pagada 2 días tarde
+(51, 'Tarjeta',        30.00, 'Pagado',    '2026-09-18 09:00:00'),
+-- Factura 52 (vence 2026-09-21): primer abono a tiempo, segundo abono tardío
+(52, 'Transferencia',  70.00, 'Pagado',    '2026-09-20 10:00:00'),
+(52, 'Transferencia',  71.50, 'Pagado',    '2026-09-24 15:30:00'),
+-- Casos que NO deben aparecer (pagos tardíos pero no exitosos)
+(6,  'Tarjeta',       350.00, 'Cancelado', '2026-08-25 10:00:00'),  -- factura 6 vence 2026-08-16
+(16, 'Transferencia', 650.00, 'Pendiente', '2026-09-05 09:00:00');  -- factura 16 vence 2026-08-30
+
+-- =====================================================================
+-- DATOS ADICIONALES PARA LA CONSULTA 57
+-- Usuarios con el mismo servicio en más de una factura con pago exitoso
+-- =====================================================================
+
+-- Facturas nuevas (reservas 1 y 2 de hoy, aún sin factura)
+INSERT INTO facturas (id_factura, id_usuario, id_membresia, id_reserva, monto_total, saldo_pendiente, estado, motivo_anulacion, fecha_emision, fecha_vencimiento) VALUES
+-- Usuario 1: pago parcial (100 de 220)
+(53, 1, NULL, 1, 220.00, 120.00, 'Pendiente', NULL, '2026-09-30 11:15:00', '2026-10-15 23:59:59'),
+-- Usuario 2: pago total
+(54, 2, NULL, 2, 262.50,   0.00, 'Pagada',    NULL, '2026-09-30 11:45:00', '2026-10-15 23:59:59');
+
+-- Detalle de las facturas nuevas (subtotal es columna generada)
+INSERT INTO detalle_facturas (id_factura, id_servicio, descripcion, cantidad, precio_unitario) VALUES
+(53, NULL, 'Reserva Sala Reuniones Andes (2 horas)',   1,  30.00),
+(53, 5,    'Uso de proyector',                         1,  30.00),
+(53, 3,    'Café ilimitado',                           8,  20.00),
+(54, NULL, 'Reserva Sala Reuniones Caribe (1.5 horas)', 1, 82.50),
+(54, 5,    'Uso de proyector',                         1,  30.00),
+(54, 4,    'Impresiones',                             30,   5.00);
+
+-- Pagos
+INSERT INTO pagos (id_factura, metodo_pago, monto, estado_transaccion, fecha_pago) VALUES
+-- Factura 53: pago parcial exitoso (cuenta para la consulta)
+(53, 'Tarjeta',        100.00, 'Pagado',    '2026-09-30 11:30:00'),
+-- Factura 54: pago total exitoso
+(54, 'Transferencia',  262.50, 'Pagado',    '2026-09-30 12:00:00');
