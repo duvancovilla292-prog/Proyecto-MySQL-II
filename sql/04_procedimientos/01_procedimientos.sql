@@ -306,6 +306,7 @@ END//
 
 -- 7. Confirma una reserva pendiente solo si su factura está totalmente pagada.
 --    Deja la factura en 'Pagada' con saldo 0 y la reserva en 'Confirmada'.
+delimiter //
 DROP PROCEDURE IF EXISTS sp_confirmar_reserva_pago//
 CREATE PROCEDURE sp_confirmar_reserva_pago(IN p_id_reserva INT)
 BEGIN
@@ -1177,3 +1178,107 @@ DELIMITER ;
 -- CALL sp_registrar_acceso_entrada(1, 'QR');
 -- CALL sp_registrar_lote_empleados(1, '[{"identificacion":"100","nombre":"Ana","apellidos":"Ruiz","fecha_nacimiento":"1990-05-20","email":"ana@empresa.com"}]');
 -- CALL sp_reporte_ingresos_acumulados();
+
+-- =========================================================================
+-- CASOS DE PRUEBA INTEGRALES PARA LOS 20 PROCEDIMIENTOS ALMACENADOS
+-- =========================================================================
+
+-- MÓDULO: MEMBRESÍAS (Procedimientos 1 a 4)
+
+-- 1. sp_registrar_membresia
+CALL sp_registrar_membresia(28, 2, '2026-10-29 08:00:00');
+-- CASO DE ERROR: 
+CALL sp_registrar_membresia(9999, 2, NOW());
+-- CASO DE ERROR: 
+CALL sp_registrar_membresia(1, 2, '2026-09-10 08:00:00');
+
+-- 2. sp_renovar_membresia
+CALL sp_renovar_membresia(11, 30);
+-- CASO DE ERROR: 
+CALL sp_renovar_membresia(11, 0);
+-- CASO DE ERROR: 
+CALL sp_renovar_membresia(13, 15);
+
+-- 3. sp_actualizar_membresias_vencidas
+CALL sp_actualizar_membresias_vencidas();
+
+-- 4. sp_suspender_membresias_morosas
+CALL sp_suspender_membresias_morosas(0);
+-- CASO DE ERROR: 
+CALL sp_suspender_membresias_morosas(-1);
+
+
+-- MÓDULO: RESERVAS Y ESPACIOS (Procedimientos 5 a 9)
+
+-- 5. sp_validar_disponibilidad_espacio
+CALL sp_validar_disponibilidad_espacio(1, '2026-10-05 09:00:00', '2026-10-05 11:00:00', @disp);
+SELECT @disp AS espacio_disponible;
+-- CASO DE ERROR: 
+CALL sp_validar_disponibilidad_espacio(1, '2026-10-05 11:00:00', '2026-10-05 09:00:00', @disp);
+
+-- 6. sp_crear_reserva
+CALL sp_crear_reserva(12, 1, '2026-10-06 09:00:00', '2026-10-06 11:00:00');
+-- CASO DE ERROR: 
+CALL sp_crear_reserva(11, 1, '2025-01-01 09:00:00', '2025-01-01 11:00:00');
+
+-- 7. sp_confirmar_reserva_pago
+CALL sp_confirmar_reserva_pago(33);
+
+-- 8. sp_cancelar_reserva_reembolso
+CALL sp_cancelar_reserva_reembolso(34, 50.00);
+-- CASO DE ERROR: CALL sp_cancelar_reserva_reembolso(34, 150.00);
+
+-- 9. sp_liberar_reservas_pendientes
+CALL sp_liberar_reservas_pendientes(1);
+-- CASO DE ERROR: CALL sp_liberar_reservas_pendientes(0);
+
+
+-- MÓDULO: PAGOS Y FACTURACIÓN (Procedimientos 10 a 13)
+
+-- 10. sp_generar_factura_membresia
+CALL sp_generar_factura_membresia(25);
+-- CASO DE ERROR: CALL sp_generar_factura_membresia(1);
+
+-- 11. sp_generar_factura_empresa
+CALL sp_generar_factura_empresa(1, 8, 2026);
+-- CASO DE ERROR: CALL sp_generar_factura_empresa(1, 13, 2026);
+
+-- 12. sp_aplicar_recargo_facturas_vencidas
+CALL sp_aplicar_recargo_facturas_vencidas(0, 10.00);
+-- CASO DE ERROR: CALL sp_aplicar_recargo_facturas_vencidas(0, 0.00);
+
+-- 13. sp_bloquear_servicios_impago
+CALL sp_bloquear_servicios_impago(3);
+-- CASO DE ERROR: CALL sp_bloquear_servicios_impago(1);
+
+
+-- MÓDULO: ACCESOS Y ASISTENCIAS (Procedimientos 14 a 17)
+
+-- 14. sp_registrar_acceso_entrada
+CALL sp_registrar_acceso_entrada(9, 'QR');
+-- CASO DE ERROR: CALL sp_registrar_acceso_entrada(9, 'FRACTAL');
+
+-- 15. sp_registrar_acceso_salida
+CALL sp_registrar_acceso_salida(9);
+-- CASO DE ERROR: CALL sp_registrar_acceso_salida(28);
+
+-- 16. sp_reporte_diario_asistencias
+CALL sp_reporte_diario_asistencias('2026-09-30');
+-- CALL sp_reporte_diario_asistencias(NULL);
+
+-- 17. sp_marcar_no_show_penalizar
+CALL sp_marcar_no_show_penalizar();
+
+
+-- MÓDULO: CORPORATIVOS Y ADMINISTRACIÓN (Procedimientos 18 a 20)
+
+-- 18. sp_registrar_lote_empleados
+CALL sp_registrar_lote_empleados(2, '[{"identificacion":"999111","nombre":"Carlos","apellidos":"Pérez","fecha_nacimiento":"1995-04-10","email":"carlos.perez@creativa.co","telefono":"3009998877"}]');
+-- CASO DE ERROR: CALL sp_registrar_lote_empleados(2, '{"identificacion":"999111"}');
+
+-- 19. sp_cancelar_reservas_usuario_eliminado
+CALL sp_cancelar_reservas_usuario_eliminado(4);
+-- CASO DE ERROR: CALL sp_cancelar_reservas_usuario_eliminado(9999);
+
+-- 20. sp_reporte_ingresos_acumulados
+CALL sp_reporte_ingresos_acumulados();
