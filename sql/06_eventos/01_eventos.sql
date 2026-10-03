@@ -1169,7 +1169,7 @@ SELECT EVENT_NAME, STATUS
  WHERE EVENT_SCHEMA = 'coworking_db' 
    AND EVENT_NAME = 'evt_recordatorio_renovacion_membresia';
 
--- Verificación 2.2: Consultar membresías activas (distintas de 'Diaria') que vencen en los próximos 5 días[cite: 12, 13]
+-- Verificación 2.2: Consultar membresías activas (distintas de 'Diaria') que vencen en los próximos 5 días
 SELECT m.id_membresia, m.id_usuario, tm.nombre, m.fecha_vencimiento 
   FROM membresias m 
   INNER JOIN tipos_membresia tm ON tm.id_tipo_membresia = m.id_tipo_membresia 
@@ -1178,7 +1178,7 @@ SELECT m.id_membresia, m.id_usuario, tm.nombre, m.fecha_vencimiento
    AND m.fecha_vencimiento > '2026-10-01 03:41:00' 
    AND m.fecha_vencimiento <= '2026-10-01 03:41:00' + INTERVAL 5 DAY;
 
--- Verificación 2.3: Verificar notificaciones generadas de tipo 'RENOVACION_MEMBRESIA'[cite: 12]
+-- Verificación 2.3: Verificar notificaciones generadas de tipo 'RENOVACION_MEMBRESIA'
 SELECT * 
   FROM notificaciones_sistema 
  WHERE tipo = 'RENOVACION_MEMBRESIA' 
@@ -1310,94 +1310,94 @@ SELECT EVENT_NAME, STATUS
  WHERE EVENT_SCHEMA = 'coworking_db' 
    AND EVENT_NAME = 'evt_aplicar_recargos_facturas_vencidas';
 
--- Verificación 14.2: Consultar facturas pendientes con más de 15 días de vencimiento[cite: 12, 13]
+-- Verificación 14.2: Consultar facturas pendientes con más de 15 días de vencimiento
 SELECT id_factura, saldo_pendiente, fecha_vencimiento 
   FROM facturas 
  WHERE estado = 'Pendiente' 
    AND saldo_pendiente > 0 
-   AND fecha_vencimiento < '2026-10-01 03:41:00' - INTERVAL 15 DAY;[cite: 12, 13]
+   AND fecha_vencimiento < '2026-10-01 03:41:00' - INTERVAL 15 DAY;
 
--- Verificación 14.3: Verificar líneas de detalle añadidas por concepto de recargo por mora[cite: 12]
+-- Verificación 14.3: Verificar líneas de detalle añadidas por concepto de recargo por mora
 SELECT * 
   FROM detalle_facturas 
  WHERE descripcion LIKE '%Recargo por mora%' 
- ORDER BY id_detalle DESC;[cite: 12]
+ ORDER BY id_detalle DESC;
 
 
 -- ---------------------------------------------------------------------
 -- 15. evt_reporte_contador_fin_de_mes
 -- ---------------------------------------------------------------------
--- Verificación 15.1: Comprobar existencia y estado del evento[cite: 12]
+-- Verificación 15.1: Comprobar existencia y estado del evento
 SELECT EVENT_NAME, STATUS 
   FROM information_schema.EVENTS 
  WHERE EVENT_SCHEMA = 'coworking_db' 
-   AND EVENT_NAME = 'evt_reporte_contador_fin_de_mes';[cite: 12]
+   AND EVENT_NAME = 'evt_reporte_contador_fin_de_mes';
 
--- Verificación 15.2: Consultar pagos exitosos registrados en el periodo contable[cite: 12, 13]
+-- Verificación 15.2: Consultar pagos exitosos registrados en el periodo contable
 SELECT COUNT(*) 
   FROM pagos 
- WHERE estado_transaccion = 'Pagado';[cite: 12, 13]
+ WHERE estado_transaccion = 'Pagado';
 
--- Verificación 15.3: Verificar reporte de tipo 'CIERRE_CONTABLE_MENSUAL' en reportes_automaticos[cite: 12]
+-- Verificación 15.3: Verificar reporte de tipo 'CIERRE_CONTABLE_MENSUAL' en reportes_automaticos
 SELECT * 
   FROM reportes_automaticos 
  WHERE tipo_reporte = 'CIERRE_CONTABLE_MENSUAL' 
- ORDER BY id_reporte DESC;[cite: 12]
+ ORDER BY id_reporte DESC;
 
 
 -- ---------------------------------------------------------------------
 -- 16. evt_depurar_accesos_antiguos
 -- ---------------------------------------------------------------------
--- Verificación 16.1: Comprobar existencia y estado del evento[cite: 12]
+-- Verificación 16.1: Comprobar existencia y estado del evento
 SELECT EVENT_NAME, STATUS 
   FROM information_schema.EVENTS 
  WHERE EVENT_SCHEMA = 'coworking_db' 
-   AND EVENT_NAME = 'evt_depurar_accesos_antiguos';[cite: 12]
+   AND EVENT_NAME = 'evt_depurar_accesos_antiguos';
 
--- Verificación 16.2: Consultar registros de acceso anteriores a 1 año de antigüedad[cite: 12, 13]
+-- Verificación 16.2: Consultar registros de acceso anteriores a 1 año de antigüedad
 SELECT COUNT(*) 
   FROM registros_acceso 
- WHERE fecha_hora_entrada < '2026-10-01 03:41:00' - INTERVAL 1 YEAR;[cite: 12, 13]
+ WHERE fecha_hora_entrada < '2026-10-01 03:41:00' - INTERVAL 1 YEAR;
 
--- Verificación 16.3: Verificar log de ejecución para la purga de accesos[cite: 12]
+-- Verificación 16.3: Verificar log de ejecución para la purga de accesos
 SELECT * 
   FROM log_eventos_ejecucion 
  WHERE evento = 'evt_depurar_accesos_antiguos' 
- ORDER BY id_log DESC;[cite: 12]
+ ORDER BY id_log DESC;
 
 
 -- ---------------------------------------------------------------------
 -- 17. evt_reporte_diario_asistencias
 -- ---------------------------------------------------------------------
--- Verificación 17.1: Comprobar existencia y estado del evento[cite: 12]
+-- Verificación 17.1: Comprobar existencia y estado del evento
 SELECT EVENT_NAME, STATUS 
   FROM information_schema.EVENTS 
  WHERE EVENT_SCHEMA = 'coworking_db' 
-   AND EVENT_NAME = 'evt_reporte_diario_asistencias';[cite: 12]
+   AND EVENT_NAME = 'evt_reporte_diario_asistencias';
 
--- Verificación 17.2: Consultar registros de acceso del día anterior[cite: 12, 13]
+-- Verificación 17.2: Consultar registros de acceso del día anterior
 SELECT COUNT(*) 
   FROM registros_acceso 
  WHERE fecha_hora_entrada >= CURDATE() - INTERVAL 1 DAY 
-   AND fecha_hora_entrada <  CURDATE();[cite: 12, 13]
+   AND fecha_hora_entrada <  CURDATE();
 
--- Verificación 17.3: Verificar reporte generado de tipo 'ASISTENCIAS_DIARIO'[cite: 12]
+-- Verificación 17.3: Verificar reporte generado de tipo 'ASISTENCIAS_DIARIO'
 SELECT * 
   FROM reportes_automaticos 
  WHERE tipo_reporte = 'ASISTENCIAS_DIARIO' 
- ORDER BY id_reporte DESC;[cite: 12]
+ ORDER BY id_reporte DESC;
 
 
 -- ---------------------------------------------------------------------
 -- 18. evt_reporte_semanal_usuarios_inactivos
 -- ---------------------------------------------------------------------
--- Verificación 18.1: Comprobar existencia y estado del evento[cite: 12]
+-- Verificación 18.1: Comprobar existencia y estado del evento
 SELECT EVENT_NAME, STATUS 
   FROM information_schema.EVENTS 
  WHERE EVENT_SCHEMA = 'coworking_db' 
-   AND EVENT_NAME = 'evt_reporte_semanal_usuarios_inactivos';[cite: 12]
+   AND EVENT_NAME = 'evt_reporte_semanal_usuarios_inactivos';
 
--- Verificación 18.2: Consultar usuarios sin accesos exitosos en los últimos 7 días[cite: 12, 13]
+-- Verificación 18.2: Consultar usuarios sin accesos exitosos en los últimos 7 días
 SELECT id_usuario 
   FROM usuarios u 
  WHERE NOT EXISTS (
@@ -1406,58 +1406,58 @@ SELECT id_usuario
          WHERE ra.id_usuario = u.id_usuario 
            AND ra.estado_validacion = 'Exitoso' 
            AND ra.fecha_hora_entrada >= CURDATE() - INTERVAL 7 DAY
-   );[cite: 12, 13]
+   );
 
--- Verificación 18.3: Verificar reporte generado de tipo 'USUARIOS_INACTIVOS_SEMANAL'[cite: 12]
+-- Verificación 18.3: Verificar reporte generado de tipo 'USUARIOS_INACTIVOS_SEMANAL'
 SELECT * 
   FROM reportes_automaticos 
  WHERE tipo_reporte = 'USUARIOS_INACTIVOS_SEMANAL' 
- ORDER BY id_reporte DESC;[cite: 12]
+ ORDER BY id_reporte DESC;
 
 
 -- ---------------------------------------------------------------------
 -- 19. evt_alerta_accesos_fuera_horario
 -- ---------------------------------------------------------------------
--- Verificación 19.1: Comprobar existencia y estado del evento[cite: 12]
+-- Verificación 19.1: Comprobar existencia y estado del evento
 SELECT EVENT_NAME, STATUS 
   FROM information_schema.EVENTS 
  WHERE EVENT_SCHEMA = 'coworking_db' 
-   AND EVENT_NAME = 'evt_alerta_accesos_fuera_horario';[cite: 12]
+   AND EVENT_NAME = 'evt_alerta_accesos_fuera_horario';
 
--- Verificación 19.2: Consultar accesos recientes con estado 'Rechazado' en las últimas 25 horas[cite: 12, 13]
+-- Verificación 19.2: Consultar accesos recientes con estado 'Rechazado' en las últimas 25 horas
 SELECT * 
   FROM registros_acceso 
  WHERE fecha_hora_entrada >= '2026-10-01 03:41:00' - INTERVAL 25 HOUR 
-   AND estado_validacion = 'Rechazado';[cite: 12, 13]
+   AND estado_validacion = 'Rechazado';
 
--- Verificación 19.3: Verificar notificaciones generadas de tipo 'ACCESO_FUERA_HORARIO'[cite: 12]
+-- Verificación 19.3: Verificar notificaciones generadas de tipo 'ACCESO_FUERA_HORARIO'
 SELECT * 
   FROM notificaciones_sistema 
  WHERE tipo = 'ACCESO_FUERA_HORARIO' 
- ORDER BY id_notificacion DESC;[cite: 12]
+ ORDER BY id_notificacion DESC;
 
 
 -- ---------------------------------------------------------------------
 -- 20. evt_reporte_top10_usuarios_frecuentes_mes
 -- ---------------------------------------------------------------------
--- Verificación 20.1: Comprobar existencia y estado del evento[cite: 12]
+-- Verificación 20.1: Comprobar existencia y estado del evento
 SELECT EVENT_NAME, STATUS 
   FROM information_schema.EVENTS 
  WHERE EVENT_SCHEMA = 'coworking_db' 
-   AND EVENT_NAME = 'evt_reporte_top10_usuarios_frecuentes_mes';[cite: 12]
+   AND EVENT_NAME = 'evt_reporte_top10_usuarios_frecuentes_mes';
 
--- Verificación 20.2: Consultar conteo de asistencias exitosas agrupadas por usuario[cite: 12, 13]
+-- Verificación 20.2: Consultar conteo de asistencias exitosas agrupadas por usuario
 SELECT id_usuario, COUNT(*) AS asistencias 
   FROM registros_acceso 
  WHERE estado_validacion = 'Exitoso' 
  GROUP BY id_usuario 
  ORDER BY asistencias DESC 
- LIMIT 10;[cite: 12, 13]
+ LIMIT 10;
 
--- Verificación 20.3: Verificar registros en la tabla top_usuarios_frecuentes_mensual[cite: 12]
+-- Verificación 20.3: Verificar registros en la tabla top_usuarios_frecuentes_mensual
 SELECT * 
   FROM top_usuarios_frecuentes_mensual 
- ORDER BY periodo DESC, posicion ASC;[cite: 12]
+ ORDER BY periodo DESC, posicion ASC;
 
 
 
