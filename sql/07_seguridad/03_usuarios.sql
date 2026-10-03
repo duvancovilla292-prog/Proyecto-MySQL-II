@@ -28,38 +28,23 @@ USE coworking_db;
 
 -- Administrador del Coworking
 CREATE USER IF NOT EXISTS 'usr_admin'@'localhost'
-    IDENTIFIED BY 'Adm!n_Cw#2026x'
-    PASSWORD EXPIRE INTERVAL 90 DAY
-    PASSWORD HISTORY 5
-    FAILED_LOGIN_ATTEMPTS 5 PASSWORD_LOCK_TIME 1;
+    IDENTIFIED BY 'Adm!n_Cw#2026x';
 
 -- Recepcionista
 CREATE USER IF NOT EXISTS 'usr_recepcion'@'localhost'
-    IDENTIFIED BY 'Recep!_Cw#2026x'
-    PASSWORD EXPIRE INTERVAL 90 DAY
-    PASSWORD HISTORY 5
-    FAILED_LOGIN_ATTEMPTS 5 PASSWORD_LOCK_TIME 1;
+    IDENTIFIED BY 'Recep!_Cw#2026x';
 
 -- Usuario final (cliente)
 CREATE USER IF NOT EXISTS 'usr_cliente'@'localhost'
-    IDENTIFIED BY 'Client!_Cw#2026x'
-    PASSWORD EXPIRE INTERVAL 90 DAY
-    PASSWORD HISTORY 5
-    FAILED_LOGIN_ATTEMPTS 5 PASSWORD_LOCK_TIME 1;
+    IDENTIFIED BY 'Client!_Cw#2026x';
 
 -- Gerente Corporativo
 CREATE USER IF NOT EXISTS 'usr_gerente'@'localhost'
-    IDENTIFIED BY 'Gerent!_Cw#2026x'
-    PASSWORD EXPIRE INTERVAL 90 DAY
-    PASSWORD HISTORY 5
-    FAILED_LOGIN_ATTEMPTS 5 PASSWORD_LOCK_TIME 1;
+    IDENTIFIED BY 'Gerent!_Cw#2026x';
 
 -- Contador
 CREATE USER IF NOT EXISTS 'usr_contador'@'localhost'
-    IDENTIFIED BY 'Conta!_Cw#2026x'
-    PASSWORD EXPIRE INTERVAL 90 DAY
-    PASSWORD HISTORY 5
-    FAILED_LOGIN_ATTEMPTS 5 PASSWORD_LOCK_TIME 1;
+    IDENTIFIED BY 'Conta!_Cw#2026x';
 
 -- =========================================================
 -- 2. ASIGNACIÓN DE ROLES

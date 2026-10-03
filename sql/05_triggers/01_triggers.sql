@@ -29,31 +29,6 @@ Advertencias de carga de datos:
 
 USE coworking_db;
 
--- =========================================================
--- PREPARACIÓN: columna usuarios.ultimo_acceso (requerida por el trigger 18)
--- =========================================================
-SET @existe_col := (
-    SELECT COUNT(*)
-      FROM information_schema.COLUMNS
-     WHERE TABLE_SCHEMA = DATABASE()
-       AND TABLE_NAME   = 'usuarios'
-       AND COLUMN_NAME  = 'ultimo_acceso'
-);
-SET @ddl := IF(@existe_col = 0,
-               'ALTER TABLE usuarios ADD COLUMN ultimo_acceso DATETIME NULL AFTER telefono',
-               'SELECT ''La columna usuarios.ultimo_acceso ya existe'' AS info');
-PREPARE stmt_ultimo_acceso FROM @ddl;
-EXECUTE stmt_ultimo_acceso;
-DEALLOCATE PREPARE stmt_ultimo_acceso;
-
-UPDATE usuarios u
-   SET u.ultimo_acceso = (
-        SELECT MAX(ra.fecha_hora_entrada)
-          FROM registros_acceso ra
-         WHERE ra.id_usuario = u.id_usuario
-           AND ra.estado_validacion = 'Exitoso'
-   );
-
 DELIMITER //
 
 -- =========================================================
@@ -482,3 +457,28 @@ DELIMITER ;
 --   FROM information_schema.TRIGGERS
 --  WHERE TRIGGER_SCHEMA = 'coworking_db' AND TRIGGER_NAME LIKE 'trg\_%'
 --  ORDER BY EVENT_OBJECT_TABLE, ACTION_TIMING, EVENT_MANIPULATION;
+
+-- =========================================================
+-- PREPARACIÓN: columna usuarios.ultimo_acceso (requerida por el trigger 18)
+-- =========================================================
+SET @existe_col := (
+    SELECT COUNT(*)
+      FROM information_schema.COLUMNS
+     WHERE TABLE_SCHEMA = DATABASE()
+       AND TABLE_NAME   = 'usuarios'
+       AND COLUMN_NAME  = 'ultimo_acceso'
+);
+SET @ddl := IF(@existe_col = 0,
+               'ALTER TABLE usuarios ADD COLUMN ultimo_acceso DATETIME NULL AFTER telefono',
+               'SELECT ''La columna usuarios.ultimo_acceso ya existe'' AS info');
+PREPARE stmt_ultimo_acceso FROM @ddl;
+EXECUTE stmt_ultimo_acceso;
+DEALLOCATE PREPARE stmt_ultimo_acceso;
+
+UPDATE usuarios u
+   SET u.ultimo_acceso = (
+        SELECT MAX(ra.fecha_hora_entrada)
+          FROM registros_acceso ra
+         WHERE ra.id_usuario = u.id_usuario
+           AND ra.estado_validacion = 'Exitoso'
+   );
